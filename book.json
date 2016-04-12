@@ -1,0 +1,6 @@
+{
+    "title": "RustとGtk+で開発するGUIアプリケーション",
+    "author": "sunnyone41",
+    "description": "gtk-rsライブラリを利用してデスクトップアプリケーションを作成する方法を説明します",
+    "dest": "book"
+}

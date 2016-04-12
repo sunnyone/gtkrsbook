@@ -1,0 +1,466 @@
+<!DOCTYPE HTML>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>RustとGtk+で開発するGUIアプリケーション</title>
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="gtk-rsライブラリを利用してデスクトップアプリケーションを作成する方法を説明します">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <base href="">
+
+        <link rel="stylesheet" href="book.css">
+        <link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/css'>
+
+        <link rel="shortcut icon" href="favicon.png">
+
+        <!-- Font Awesome -->
+        <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+
+        <!-- MathJax -->
+        <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+        <!-- Fetch JQuery from CDN but have a local fallback -->
+        <script src="http://code.jquery.com/jquery-2.1.4.min.js"></script>
+        <script>
+            if (typeof jQuery == 'undefined') {
+                document.write(unescape("%3Cscript src='jquery.js'%3E%3C/script%3E"));
+            }
+        </script>
+    </head>
+    <body>
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme = localStorage.getItem('theme');
+            if (theme == null) { theme = 'light'; }
+            $('body').removeClass().addClass(theme);
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var sidebar = localStorage.getItem('sidebar');
+            if (sidebar === "hidden") { $("html").addClass("sidebar-hidden") }
+            else if (sidebar === "visible") { $("html").addClass("sidebar-visible") }
+        </script>
+
+        <div id="sidebar" class="sidebar">
+            <ul class="chapter"><li><a href="./introduction.html"><strong>1.</strong> はじめに</a></li><li><a href="./why_rust.html"><strong>2.</strong> なぜRustなのか</a></li><li><a href="./hello_world.html"><strong>3.</strong> Hello, World</a></li><li><a href="./container.html"><strong>4.</strong> ウィジットとコンテナ</a></li><li><a href="./signal.html"><strong>5.</strong> シグナル（イベント）</a></li><li><a href="./glade.html"><strong>6.</strong> Glade（UIデザイナー）の活用</a></li></ul>
+        </div>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar" class="menu-bar">
+                    <div class="left-buttons">
+                        <i id="sidebar-toggle" class="fa fa-bars"></i>
+                        <i id="theme-toggle" class="fa fa-paint-brush"></i>
+                    </div>
+
+                    <h1 class="menu-title">RustとGtk+で開発するGUIアプリケーション</h1>
+
+                    <div class="right-buttons">
+                        <i id="print-button" class="fa fa-print" title="Print this book"></i>
+                    </div>
+                </div>
+
+                <div id="content" class="content">
+                    <h1>RustとGtk+で開発するGUIアプリケーション Rev 0.1</h1>
+<h1>この文書の目的とすること</h1>
+<p>Rust言語とGtk+ / gtk-rs ライブラリを利用して、GUIアプリケーション（デスクトップアプリケーション）を作る方法を説明します。</p>
+<p>gtk-rsライブラリを利用してRustとGtk+を組み合わせることを中心として記述し、以下の内容は対象としません。</p>
+<ul>
+<li>Rust言語自体の入門</li>
+<li>Gtk+の各種ウィジットの使い方</li>
+</ul>
+<h1>事前に準備する環境</h1>
+<p>環境は、以下の通りを想定します。</p>
+<ul>
+<li>Ubuntu 14.04</li>
+<li>Rust 1.7.0</li>
+</ul>
+<h1>利用するライブラリのバージョン</h1>
+<ul>
+<li>Gtk+ 3.10</li>
+<li>Glade 3.16.1 (Optional)</li>
+<li>gtk-rs 0.0.7</li>
+</ul>
+<p>Ubuntuでは、以下の通り実行することで、必要なライブラリのインストールが可能です。</p>
+<pre><code># apt-get install libgtk-3-0-dev glade
+</code></pre>
+<h1>なぜRustなのか</h1>
+<p>Gtk+アプリケーション開発の際に、Rustを利用するメリットは以下の通りです。</p>
+<h2>ランタイムが軽量な言語環境</h2>
+<p>Rustは、静的型付けのコンパイラ型言語で、コンパイラはネイティブコードを出力します。
+C++のようにスコープによるリソース管理を前提とするため、GCレスで言語ランタイムが軽量です。</p>
+<p>インタプリタによる言語解釈や、言語ランタイムによる起動のオーバーヘッドが少ない分、
+軽快な動作が可能です。</p>
+<h2>とっつきやすいC言語系の文法＋GUIアプリケーションに便利な記法</h2>
+<p>CやJava, C#のようなC言語系の文法のため、比較的とっつきやすい記法になっています。</p>
+<p>また、Rubyのイテレータの記法に似た、イベント処理に便利なクロージャの記法をサポートしており、
+Gtk+をCから利用する場合と比較してスムーズなイベントハンドラの記述が可能です。</p>
+<h2>言語レベルでのデータ競合安全性の担保</h2>
+<p>GUIアプリケーションでは、UIのブロッキングを防ぐため、長時間の処理をスレッドで
+行うことがあります。Rustではデータのスレッド境界越えに対して、言語レベルで保護機構を
+備えているため、意図しないデータ競合を減らすことが可能です。
+（不用意なスレッド境界越えを記述しようとすると、コンパイルエラーになります。）</p>
+<h1>Hello, World</h1>
+<p>まずは、プロジェクトを作成し、ウィンドウを表示します。</p>
+<h2>プロジェクトの作成</h2>
+<p>cargoでプロジェクトを作成します。</p>
+<pre><code>$ cargo new hello --bin
+</code></pre>
+<p>作成されたhello/Cargo.tomlにgtkを追加します。</p>
+<pre><code>[dependencies]
+gtk = { version = &quot;0.0.7&quot;, features = [&quot;v3_10&quot;] }
+</code></pre>
+<p>buildして、エラーにならないことを確認します。</p>
+<pre><code>$ cargo build
+</code></pre>
+<p>これでプロジェクトの作成は完了です。</p>
+<h2>ウィンドウの表示</h2>
+<p>ウィンドウを表示するコードを、以下のようにsrc/main.rs に記述します。</p>
+<p>gtk::init()を呼び出し、<a href="http://gtk-rs.org/docs/gtk/struct.Window.html#method.new">gtk::Window</a>を作成/表示後、gtk::main()でメインループに入ります。</p>
+<pre><code class="language-rust">extern crate gtk;
+
+use gtk::prelude::*;
+
+fn main() {
+    gtk::init().expect(&quot;Failed to initialize GTK.&quot;);
+
+    let window = gtk::Window::new(gtk::WindowType::Toplevel);
+
+    window.set_title(&quot;Hello, World&quot;);
+    window.show_all();
+    
+    gtk::main();
+}
+</code></pre>
+<p>cargoコマンドを以下の通り実行し、ウィンドウが表示されれば、Hello, World成功です！</p>
+<pre><code>$ cargo run
+</code></pre>
+<p><img src="images/hello-only.png" alt="Helloウィンドウ" /></p>
+<p>ウィンドウを閉じたときに終了するコードを書いていないため、Ctrl+Cで終了させます。</p>
+<h1>コンテナ(container)とウィジット(widget)</h1>
+<h2>ラベル ウィジットの追加</h2>
+<p>今度はできたウィンドウにラベルを追加してみます。</p>
+<p>ラベルを追加するには、Labelインスタンスを作成し、windowに<a href="http://gtk-rs.org/docs/gtk/trait.ContainerExt.html#tymethod.add">add</a>するだけです。このLabelのようなUI部品を、Gtk+では「ウィジット(widget)」といいます。</p>
+<pre><code class="language-rust">extern crate gtk;
+
+use gtk::prelude::*;
+
+fn main() {
+    gtk::init().expect(&quot;Failed to initialize GTK.&quot;);
+
+    let window = gtk::Window::new(gtk::WindowType::Toplevel);
+    window.set_title(&quot;Hello, World&quot;);
+    
+    let label = gtk::Label::new(Some(&quot;Hello, World&quot;));
+    window.add(&amp;label);
+    
+    window.show_all();
+    
+    gtk::main();
+}
+</code></pre>
+<p><img src="./images/label-only.png" alt="Labelのみ" /></p>
+<h2>Buttonを追加すると…？</h2>
+<p>では試しに<a href="http://gtk-rs.org/docs/gtk/struct.Button.html">Button</a>ウィジットをaddしてみましょう。</p>
+<pre><code class="language-rust">let label = gtk::Label::new(Some(&quot;Hello, World&quot;));
+window.add(&amp;label);
+
+let button = gtk::Button::new_with_label(&quot;OK&quot;);
+window.add(&amp;button);
+</code></pre>
+<p>実行すると、以下のようなエラーが出力されます。</p>
+<blockquote>
+<p>(hello:5518): Gtk-WARNING **: Attempting to add a widget with type GtkButton to a GtkWindow, but as a GtkBin subclass a GtkWindow can only contain one widget at a time; it already contains a widget of type GtkLabel</p>
+</blockquote>
+<p>エラーは、GtkBinのサブクラスであるGtkWindowはひとつのウィジットしか含められないと言っています。どういうことでしょうか。</p>
+<h2>コンテナを追加</h2>
+<p>Windowのように、他のコンテナをもつことができるウィジットをGtk+では「コンテナ(Container)」といいます。
+Windowは、<a href="http://gtk-rs.org/docs/gtk/struct.Bin.html">Bin</a>というひとつのウィジットを持つことができるコンテナです。</p>
+<p>もし先の例のように、複数個のウィジットを追加したい場合は、他のコンテナを使う必要があります。ここでは、一番よく使われる「<a href="http://gtk-rs.org/docs/gtk/struct.Box.html">Box</a>」というコンテナを使ってみましょう。このコンテナはウィジットを縦あるいは横に並べることができます。</p>
+<pre><code class="language-rust">extern crate gtk;
+
+use gtk::prelude::*;
+
+
+fn main() {
+    gtk::init().expect(&quot;Failed to initialize GTK.&quot;);
+
+    let window = gtk::Window::new(gtk::WindowType::Toplevel);
+    window.set_title(&quot;Hello, World&quot;);
+    
+    let hbox = gtk::Box::new(gtk::Orientation::Horizontal, 5);
+    
+    let label = gtk::Label::new(Some(&quot;Hello, World&quot;));
+    hbox.pack_start(&amp;label, true, true, 5);
+    
+    let button = gtk::Button::new_with_label(&quot;OK&quot;);
+    hbox.pack_start(&amp;button, false, false, 5);
+
+    window.add(&amp;hbox);
+    window.show_all();
+    
+    gtk::main();
+}
+</code></pre>
+<p>動作させると、このようになります。</p>
+<p><img src="./images/label-button.png" alt="LabelとButton" /></p>
+<p>Boxもコンテナであるため、もちろんWindowと同様にadd()することができます。しかし、広げるかどうかなどのパラメータをいくつか与えた方が便利であるため、普通は<a href="http://gtk-rs.org/docs/gtk/trait.BoxExt.html#tymethod.pack_start">pack_start</a>あるいは<a href="http://gtk-rs.org/docs/gtk/trait.BoxExt.html#tymethod.pack_end">pack_end</a>を利用します。</p>
+<h2>コンテナのネスト</h2>
+<p>コンテナもウィジットのため、コンテナをコンテナの中に入れることができます。</p>
+<p>例として、ラベルの下に1行テキスト入力とボタンを置く画面を作ると、以下のようになります。
+<a href="http://gtk-rs.org/docs/gtk/struct.Entry.html">Entry</a>が1行のテキストを入力するためのウィジットです。</p>
+<pre><code class="language-rust">extern crate gtk;
+
+use gtk::prelude::*;
+
+
+fn main() {
+    gtk::init().expect(&quot;Failed to initialize GTK.&quot;);
+
+    let window = gtk::Window::new(gtk::WindowType::Toplevel);
+    window.set_title(&quot;Hello, World&quot;);
+
+    let vbox = gtk::Box::new(gtk::Orientation::Vertical, 5);
+    let label = gtk::Label::new(Some(&quot;Hello, World&quot;));
+    vbox.pack_start(&amp;label, false, false, 5);
+    
+    let hbox = gtk::Box::new(gtk::Orientation::Horizontal, 5);
+    
+    let entry = gtk::Entry::new();
+    hbox.pack_start(&amp;entry, false, false, 5);
+    
+    let button = gtk::Button::new_with_label(&quot;OK&quot;);
+    hbox.pack_start(&amp;button, false, false, 5);
+    
+    vbox.pack_start(&amp;hbox, true, true, 5);
+
+    window.add(&amp;vbox);
+    window.show_all();
+    
+    gtk::main();
+}
+</code></pre>
+<p>動作させると、このようになります。</p>
+<p><img src="./images/label-entry-button.png" alt="LabelとEntryとButton" /></p>
+<p>もしコードでUIを組み立てる場合は、様々なウィジットを活用しながら、コンテナに詰めていくという作業の繰り返しになります。</p>
+<h1>シグナル（イベント）</h1>
+<p>さて、ウィジットを配置することができるようになりましたが、相変わらずきちんと終了しないままです。
+ウィンドウを閉じたときにアプリケーションを終了させるようにしましょう。</p>
+<p>ウィンドウを閉じたときにアプリケーションを終了させるには、<a href="http://gtk-rs.org/docs/gtk/trait.WidgetSignals.html#tymethod.connect_delete_event">connect_delete_event</a>に関数を渡します。</p>
+<p>最初のHello, Worldウィンドウを閉じたときに終了させるようにするには、以下のように記述します。</p>
+<pre><code class="language-rust">extern crate gtk;
+
+use gtk::prelude::*;
+
+fn main() {
+    gtk::init().expect(&quot;Failed to initialize GTK.&quot;);
+
+    let window = gtk::Window::new(gtk::WindowType::Toplevel);
+
+    window.set_title(&quot;Hello, World&quot;);
+    
+    window.connect_delete_event(|_, _| {
+        gtk::main_quit();
+        Inhibit(false)
+    });
+
+    window.show_all();
+    
+    gtk::main();
+}
+</code></pre>
+<p>渡す関数には、Self(=window)とEventが渡ってきますが、どちらもここでは必要ないので_で無視します。
+関数の返り値となる「<a href="http://gtk-rs.org/docs/gtk/struct.Inhibit.html">Inhibit</a>」はデフォルトハンドラを実行するかどうかを意味する値です。ここではどちらでもよいですが、falseを返しておきます。</p>
+<p>このように、何かの契機で処理するための仕組みをGtk+ (が利用しているGLib Object System）では「シグナル」といっています。</p>
+<h2>ウィジットの値をハンドラ中で利用する</h2>
+<p>先の例に、1行テキスト入力とボタンを追加して、ボタンが押されたらコンソールに内容を表示するようにしてみましょう。</p>
+<p>Buttonのクリックに反応するようにするには、<a href="http://gtk-rs.org/docs/gtk/trait.ButtonSignals.html#tymethod.connect_clicked">connect_clicked</a>を使います。</p>
+<pre><code class="language-rust">extern crate gtk;
+
+use gtk::prelude::*;
+
+fn main() {
+    gtk::init().expect(&quot;Failed to initialize GTK.&quot;);
+
+    let window = gtk::Window::new(gtk::WindowType::Toplevel);
+
+    window.set_title(&quot;Hello, World&quot;);
+    
+    window.connect_delete_event(|_, _| {
+        gtk::main_quit();
+        Inhibit(true)
+    });
+
+    let hbox = gtk::Box::new(gtk::Orientation::Horizontal, 5);
+    
+    let entry = gtk::Entry::new();
+    hbox.pack_start(&amp;entry, true, true, 5);
+    
+    let button = gtk::Button::new_with_label(&quot;Say&quot;);
+    button.connect_clicked(move |_| {
+        println!(&quot;Text: {}&quot;, entry.get_text().unwrap());
+    });
+    
+    hbox.pack_start(&amp;button, false, false, 5);
+    
+    window.add(&amp;hbox);
+    window.show_all();
+    
+    gtk::main();
+}
+</code></pre>
+<p>動作させると、このような形になります。</p>
+<p><img src="images/entry-println.png" alt="entry-println" /></p>
+<p>ここで大事なことは、クロージャにmoveキーワードを付与し、button変数の所有権をクロージャに移動させているところです。移動させないと、変数「entry」よりもクロージャのほうが長く生きる可能性があるため、変数の借用（borrow）では実際使うタイミングで変数がいなくなっている可能性があるとコンパイラが判断するためです。</p>
+<p>外してコンパイルすると、その旨のエラーが出力されるのでわかります。</p>
+<blockquote>
+<p>src/main.rs:24:28: 26:6 error: closure may outlive the current function, but it borrows <code>entry</code>, which is owned by the current function [E0373]<br />
+src/main.rs:24     button.connect_clicked(|_| {<br />
+src/main.rs:25         println!(&quot;Text: {}&quot;, entry.get_text().unwrap());<br />
+src/main.rs:26     });<br />
+src/main.rs:24:28: 26:6 help: run <code>rustc --explain E0373</code> to see a detailed explanation<br />
+src/main.rs:25:30: 25:35 note: <code>entry</code> is borrowed here<br />
+src/main.rs:25         println!(&quot;Text: {}&quot;, entry.get_text().unwrap());<br />
+^~~~~<br />
+（略）<br />
+src/main.rs:24:28: 26:6 help: to force the closure to take ownership of <code>entry</code> (and any other referenced variables), use the <code>move</code> keyword, as shown:<br />
+src/main.rs:       button.connect_clicked(move |_| {<br />
+src/main.rs:           println!(&quot;Text: {}&quot;, entry.get_text().unwrap());&quot;&quot;<br />
+src/main.rs:       });</p>
+</blockquote>
+<h3>メッセージダイアログの表示</h3>
+<p>今度はprintln!()ではなく、メッセージダイアログを表示してみましょう。</p>
+<p>メッセージダイアログを表示する例は、以下のようになります。</p>
+<pre><code class="language-rust">extern crate gtk;
+
+use gtk::prelude::*;
+
+fn main() {
+    gtk::init().expect(&quot;Failed to initialize GTK.&quot;);
+
+    let window = gtk::Window::new(gtk::WindowType::Toplevel);
+
+    window.set_title(&quot;Hello, World&quot;);
+    
+    window.connect_delete_event(|_, _| {
+        gtk::main_quit();
+        Inhibit(true)
+    });
+
+    let hbox = gtk::Box::new(gtk::Orientation::Horizontal, 5);
+    
+    let entry = gtk::Entry::new();
+    hbox.pack_start(&amp;entry, true, true, 5);
+    
+    let button = gtk::Button::new_with_label(&quot;Say&quot;);
+    
+    let window_ = window.clone();
+    button.connect_clicked(move |_| {
+        let message = format!(&quot;Text: {}&quot;, entry.get_text().unwrap());
+        
+        let dialog = gtk::MessageDialog::new(
+            Some(&amp;window_),
+            gtk::DialogFlags::empty(),
+            gtk::MessageType::Info,
+            gtk::ButtonsType::Ok,
+            &amp;message
+        );
+        dialog.run();
+        dialog.destroy();
+    });
+    
+    hbox.pack_start(&amp;button, false, false, 5);
+    
+    window.add(&amp;hbox);
+    window.show_all();
+    
+    gtk::main();
+}
+</code></pre>
+<p><img src="images/message-dialog.png" alt="message-dialog" /></p>
+<p>MessageDialog::newの第1引数には、windowのOptionを渡しますが、windowそのものの所有権をmoveで
+クロージャに渡してしまうと、あとで使うはずのwindowが使えなくなってしまいます。そのため、clone()したものをクロージャで使います。</p>
+<p>gtk::Windowのclone()は、Gtk+で利用しているGObjectのリファレンスカウントを増加させるもので、deep copyされるわけではありません。</p>
+<p>なお、clone()しないとこのようなエラーが出力されます。clone()が必要かも、とエラーで言っています。</p>
+<blockquote>
+<p>src/main.rs:41:5: 41:11 error: use of moved value: <code>window</code> [E0382]<br />
+src/main.rs:41     window.add(&amp;hbox);<br />
+^~~~~~<br />
+src/main.rs:41:5: 41:11 help: run <code>rustc --explain E0382</code> to see a detailed explanation<br />
+src/main.rs:25:28: 37:6 note: <code>window</code> moved into closure environment here because it has type <code>gtk::auto::window::Window</code>, which is non-copyable<br />
+src/main.rs:25     button.connect_clicked(move |_| {<br />
+src/main.rs:26         let message = format!(&quot;Text: {}&quot;, entry.get_text().unwrap());<br />
+src/main.rs:27<br />
+src/main.rs:28         let dialog = gtk::MessageDialog::new(<br />
+src/main.rs:29             Some(&amp;window),<br />
+src/main.rs:30             gtk::DialogFlags::empty(),<br />
+...<br />
+src/main.rs:25:28: 37:6 help: perhaps you meant to use <code>clone()</code>?</p>
+</blockquote>
+<p>ここまで来れば、すでに簡単なアプリケーションが作れるようになっているはずです。</p>
+<h1>Gladeの活用</h1>
+<p>以前の章のようにUIをコードで記述していけば、UIを作ることができますが、命令的な記述では手間がかかります。
+そこで登場するのが、<a href="https://glade.gnome.org/">Glade</a>というGtk+アプリケーションのUIデザイナーです。</p>
+<h2>GladeでのUIの作成</h2>
+<p>glade &amp;でGladeを起動すると、UIデザインの画面が表示されるので、そこでウィジットをドラッグアンドドロップで配置していきます。</p>
+<p><img src="./images/glade.png" alt="glade" /></p>
+<p>あとは、「ファイル＞名前をつけて保存」によりUIの定義が記述されたXMLファイルを保存します。ここでは、ファイルパスをsrc/resources/main.ui とします。</p>
+<h2>BuilderによるUI定義ファイルの呼び出し</h2>
+<p>GtkBuilderを利用すると、Gladeで保存したファイルからUIを作成することができます。Rustのinclude_str!マクロを利用すると、コンパイル時に文字列にしておいてくれるため、さらに便利です。</p>
+<p>保存したmain.uiを表示するには、<a href="http://gtk-rs.org/docs/gtk/struct.Builder.html#method.new_from_string">Builder</a>を作り、必要に応じて<a href="http://gtk-rs.org/docs/gtk/struct.Builder.html#method.get_object">get_object</a>で取り出してシグナルを接続します。</p>
+<pre><code class="language-rust">extern crate gtk;
+
+use gtk::prelude::*;
+
+fn main() {
+    gtk::init().expect(&quot;Failed to initialize GTK.&quot;);
+
+    let ui = include_str!(&quot;resources/main.ui&quot;);
+    let builder = gtk::Builder::new_from_string(ui);
+    
+    let window1 : gtk::Window = builder.get_object(&quot;window1&quot;).unwrap();
+    window1.connect_delete_event(move |_, _| {
+        gtk::main_quit();
+        Inhibit(false)
+    });
+
+    window1.show_all();
+    
+    gtk::main();
+}
+</code></pre>
+<p>get_object()は、型がわからないため、明示的に型を指示します。</p>
+
+                </div>
+
+                <!-- Mobile navigation buttons -->
+                
+
+                
+
+            </div>
+
+            
+
+            
+
+        </div>
+
+
+        <!-- Local fallback for Font Awesome -->
+        <script>
+            if ($(".fa").css("font-family") !== "FontAwesome") {
+                $('<link rel="stylesheet" type="text/css" href="_FontAwesome/css/font-awesome.css">').prependTo('head');
+            }
+        </script>
+
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+    </body>
+</html>

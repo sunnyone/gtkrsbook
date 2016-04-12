@@ -1,0 +1,129 @@
+<!DOCTYPE HTML>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>RustとGtk+で開発するGUIアプリケーション</title>
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="gtk-rsライブラリを利用してデスクトップアプリケーションを作成する方法を説明します">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <base href="">
+
+        <link rel="stylesheet" href="book.css">
+        <link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/css'>
+
+        <link rel="shortcut icon" href="favicon.png">
+
+        <!-- Font Awesome -->
+        <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+
+        <!-- MathJax -->
+        <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+        <!-- Fetch JQuery from CDN but have a local fallback -->
+        <script src="http://code.jquery.com/jquery-2.1.4.min.js"></script>
+        <script>
+            if (typeof jQuery == 'undefined') {
+                document.write(unescape("%3Cscript src='jquery.js'%3E%3C/script%3E"));
+            }
+        </script>
+    </head>
+    <body>
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme = localStorage.getItem('theme');
+            if (theme == null) { theme = 'light'; }
+            $('body').removeClass().addClass(theme);
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var sidebar = localStorage.getItem('sidebar');
+            if (sidebar === "hidden") { $("html").addClass("sidebar-hidden") }
+            else if (sidebar === "visible") { $("html").addClass("sidebar-visible") }
+        </script>
+
+        <div id="sidebar" class="sidebar">
+            <ul class="chapter"><li><a href="./introduction.html"><strong>1.</strong> はじめに</a></li><li><a href="./why_rust.html" class="active"><strong>2.</strong> なぜRustなのか</a></li><li><a href="./hello_world.html"><strong>3.</strong> Hello, World</a></li><li><a href="./container.html"><strong>4.</strong> ウィジットとコンテナ</a></li><li><a href="./signal.html"><strong>5.</strong> シグナル（イベント）</a></li><li><a href="./glade.html"><strong>6.</strong> Glade（UIデザイナー）の活用</a></li></ul>
+        </div>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar" class="menu-bar">
+                    <div class="left-buttons">
+                        <i id="sidebar-toggle" class="fa fa-bars"></i>
+                        <i id="theme-toggle" class="fa fa-paint-brush"></i>
+                    </div>
+
+                    <h1 class="menu-title">RustとGtk+で開発するGUIアプリケーション</h1>
+
+                    <div class="right-buttons">
+                        <i id="print-button" class="fa fa-print" title="Print this book"></i>
+                    </div>
+                </div>
+
+                <div id="content" class="content">
+                    <h1>なぜRustなのか</h1>
+<p>Gtk+アプリケーション開発の際に、Rustを利用するメリットは以下の通りです。</p>
+<h2>ランタイムが軽量な言語環境</h2>
+<p>Rustは、静的型付けのコンパイラ型言語で、コンパイラはネイティブコードを出力します。
+C++のようにスコープによるリソース管理を前提とするため、GCレスで言語ランタイムが軽量です。</p>
+<p>インタプリタによる言語解釈や、言語ランタイムによる起動のオーバーヘッドが少ない分、
+軽快な動作が可能です。</p>
+<h2>とっつきやすいC言語系の文法＋GUIアプリケーションに便利な記法</h2>
+<p>CやJava, C#のようなC言語系の文法のため、比較的とっつきやすい記法になっています。</p>
+<p>また、Rubyのイテレータの記法に似た、イベント処理に便利なクロージャの記法をサポートしており、
+Gtk+をCから利用する場合と比較してスムーズなイベントハンドラの記述が可能です。</p>
+<h2>言語レベルでのデータ競合安全性の担保</h2>
+<p>GUIアプリケーションでは、UIのブロッキングを防ぐため、長時間の処理をスレッドで
+行うことがあります。Rustではデータのスレッド境界越えに対して、言語レベルで保護機構を
+備えているため、意図しないデータ競合を減らすことが可能です。
+（不用意なスレッド境界越えを記述しようとすると、コンパイルエラーになります。）</p>
+
+                </div>
+
+                <!-- Mobile navigation buttons -->
+                
+                    <a href="./introduction.html" class="mobile-nav-chapters previous">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
+
+                
+                    <a href="./hello_world.html" class="mobile-nav-chapters next">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+                
+
+            </div>
+
+            
+                <a href="./introduction.html" class="nav-chapters previous" title="You can navigate through the chapters using the arrow keys">
+                    <i class="fa fa-angle-left"></i>
+                </a>
+            
+
+            
+                <a href="./hello_world.html" class="nav-chapters next" title="You can navigate through the chapters using the arrow keys">
+                    <i class="fa fa-angle-right"></i>
+                </a>
+            
+
+        </div>
+
+
+        <!-- Local fallback for Font Awesome -->
+        <script>
+            if ($(".fa").css("font-family") !== "FontAwesome") {
+                $('<link rel="stylesheet" type="text/css" href="_FontAwesome/css/font-awesome.css">').prependTo('head');
+            }
+        </script>
+
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+    </body>
+</html>

@@ -1,0 +1,268 @@
+<!DOCTYPE HTML>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>RustとGtk+で開発するGUIアプリケーション</title>
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="gtk-rsライブラリを利用してデスクトップアプリケーションを作成する方法を説明します">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <base href="">
+
+        <link rel="stylesheet" href="book.css">
+        <link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/css'>
+
+        <link rel="shortcut icon" href="favicon.png">
+
+        <!-- Font Awesome -->
+        <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+
+        <!-- MathJax -->
+        <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+        <!-- Fetch JQuery from CDN but have a local fallback -->
+        <script src="http://code.jquery.com/jquery-2.1.4.min.js"></script>
+        <script>
+            if (typeof jQuery == 'undefined') {
+                document.write(unescape("%3Cscript src='jquery.js'%3E%3C/script%3E"));
+            }
+        </script>
+    </head>
+    <body>
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme = localStorage.getItem('theme');
+            if (theme == null) { theme = 'light'; }
+            $('body').removeClass().addClass(theme);
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var sidebar = localStorage.getItem('sidebar');
+            if (sidebar === "hidden") { $("html").addClass("sidebar-hidden") }
+            else if (sidebar === "visible") { $("html").addClass("sidebar-visible") }
+        </script>
+
+        <div id="sidebar" class="sidebar">
+            <ul class="chapter"><li><a href="./introduction.html"><strong>1.</strong> はじめに</a></li><li><a href="./why_rust.html"><strong>2.</strong> なぜRustなのか</a></li><li><a href="./hello_world.html"><strong>3.</strong> Hello, World</a></li><li><a href="./container.html"><strong>4.</strong> ウィジットとコンテナ</a></li><li><a href="./signal.html" class="active"><strong>5.</strong> シグナル（イベント）</a></li><li><a href="./glade.html"><strong>6.</strong> Glade（UIデザイナー）の活用</a></li></ul>
+        </div>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar" class="menu-bar">
+                    <div class="left-buttons">
+                        <i id="sidebar-toggle" class="fa fa-bars"></i>
+                        <i id="theme-toggle" class="fa fa-paint-brush"></i>
+                    </div>
+
+                    <h1 class="menu-title">RustとGtk+で開発するGUIアプリケーション</h1>
+
+                    <div class="right-buttons">
+                        <i id="print-button" class="fa fa-print" title="Print this book"></i>
+                    </div>
+                </div>
+
+                <div id="content" class="content">
+                    <h1>シグナル（イベント）</h1>
+<p>さて、ウィジットを配置することができるようになりましたが、相変わらずきちんと終了しないままです。
+ウィンドウを閉じたときにアプリケーションを終了させるようにしましょう。</p>
+<p>ウィンドウを閉じたときにアプリケーションを終了させるには、<a href="http://gtk-rs.org/docs/gtk/trait.WidgetSignals.html#tymethod.connect_delete_event">connect_delete_event</a>に関数を渡します。</p>
+<p>最初のHello, Worldウィンドウを閉じたときに終了させるようにするには、以下のように記述します。</p>
+<pre><code class="language-rust">extern crate gtk;
+
+use gtk::prelude::*;
+
+fn main() {
+    gtk::init().expect(&quot;Failed to initialize GTK.&quot;);
+
+    let window = gtk::Window::new(gtk::WindowType::Toplevel);
+
+    window.set_title(&quot;Hello, World&quot;);
+    
+    window.connect_delete_event(|_, _| {
+        gtk::main_quit();
+        Inhibit(false)
+    });
+
+    window.show_all();
+    
+    gtk::main();
+}
+</code></pre>
+<p>渡す関数には、Self(=window)とEventが渡ってきますが、どちらもここでは必要ないので_で無視します。
+関数の返り値となる「<a href="http://gtk-rs.org/docs/gtk/struct.Inhibit.html">Inhibit</a>」はデフォルトハンドラを実行するかどうかを意味する値です。ここではどちらでもよいですが、falseを返しておきます。</p>
+<p>このように、何かの契機で処理するための仕組みをGtk+ (が利用しているGLib Object System）では「シグナル」といっています。</p>
+<h2>ウィジットの値をハンドラ中で利用する</h2>
+<p>先の例に、1行テキスト入力とボタンを追加して、ボタンが押されたらコンソールに内容を表示するようにしてみましょう。</p>
+<p>Buttonのクリックに反応するようにするには、<a href="http://gtk-rs.org/docs/gtk/trait.ButtonSignals.html#tymethod.connect_clicked">connect_clicked</a>を使います。</p>
+<pre><code class="language-rust">extern crate gtk;
+
+use gtk::prelude::*;
+
+fn main() {
+    gtk::init().expect(&quot;Failed to initialize GTK.&quot;);
+
+    let window = gtk::Window::new(gtk::WindowType::Toplevel);
+
+    window.set_title(&quot;Hello, World&quot;);
+    
+    window.connect_delete_event(|_, _| {
+        gtk::main_quit();
+        Inhibit(true)
+    });
+
+    let hbox = gtk::Box::new(gtk::Orientation::Horizontal, 5);
+    
+    let entry = gtk::Entry::new();
+    hbox.pack_start(&amp;entry, true, true, 5);
+    
+    let button = gtk::Button::new_with_label(&quot;Say&quot;);
+    button.connect_clicked(move |_| {
+        println!(&quot;Text: {}&quot;, entry.get_text().unwrap());
+    });
+    
+    hbox.pack_start(&amp;button, false, false, 5);
+    
+    window.add(&amp;hbox);
+    window.show_all();
+    
+    gtk::main();
+}
+</code></pre>
+<p>動作させると、このような形になります。</p>
+<p><img src="images/entry-println.png" alt="entry-println" /></p>
+<p>ここで大事なことは、クロージャにmoveキーワードを付与し、button変数の所有権をクロージャに移動させているところです。移動させないと、変数「entry」よりもクロージャのほうが長く生きる可能性があるため、変数の借用（borrow）では実際使うタイミングで変数がいなくなっている可能性があるとコンパイラが判断するためです。</p>
+<p>外してコンパイルすると、その旨のエラーが出力されるのでわかります。</p>
+<blockquote>
+<p>src/main.rs:24:28: 26:6 error: closure may outlive the current function, but it borrows <code>entry</code>, which is owned by the current function [E0373]<br />
+src/main.rs:24     button.connect_clicked(|_| {<br />
+src/main.rs:25         println!(&quot;Text: {}&quot;, entry.get_text().unwrap());<br />
+src/main.rs:26     });<br />
+src/main.rs:24:28: 26:6 help: run <code>rustc --explain E0373</code> to see a detailed explanation<br />
+src/main.rs:25:30: 25:35 note: <code>entry</code> is borrowed here<br />
+src/main.rs:25         println!(&quot;Text: {}&quot;, entry.get_text().unwrap());<br />
+^~~~~<br />
+（略）<br />
+src/main.rs:24:28: 26:6 help: to force the closure to take ownership of <code>entry</code> (and any other referenced variables), use the <code>move</code> keyword, as shown:<br />
+src/main.rs:       button.connect_clicked(move |_| {<br />
+src/main.rs:           println!(&quot;Text: {}&quot;, entry.get_text().unwrap());&quot;&quot;<br />
+src/main.rs:       });</p>
+</blockquote>
+<h3>メッセージダイアログの表示</h3>
+<p>今度はprintln!()ではなく、メッセージダイアログを表示してみましょう。</p>
+<p>メッセージダイアログを表示する例は、以下のようになります。</p>
+<pre><code class="language-rust">extern crate gtk;
+
+use gtk::prelude::*;
+
+fn main() {
+    gtk::init().expect(&quot;Failed to initialize GTK.&quot;);
+
+    let window = gtk::Window::new(gtk::WindowType::Toplevel);
+
+    window.set_title(&quot;Hello, World&quot;);
+    
+    window.connect_delete_event(|_, _| {
+        gtk::main_quit();
+        Inhibit(true)
+    });
+
+    let hbox = gtk::Box::new(gtk::Orientation::Horizontal, 5);
+    
+    let entry = gtk::Entry::new();
+    hbox.pack_start(&amp;entry, true, true, 5);
+    
+    let button = gtk::Button::new_with_label(&quot;Say&quot;);
+    
+    let window_ = window.clone();
+    button.connect_clicked(move |_| {
+        let message = format!(&quot;Text: {}&quot;, entry.get_text().unwrap());
+        
+        let dialog = gtk::MessageDialog::new(
+            Some(&amp;window_),
+            gtk::DialogFlags::empty(),
+            gtk::MessageType::Info,
+            gtk::ButtonsType::Ok,
+            &amp;message
+        );
+        dialog.run();
+        dialog.destroy();
+    });
+    
+    hbox.pack_start(&amp;button, false, false, 5);
+    
+    window.add(&amp;hbox);
+    window.show_all();
+    
+    gtk::main();
+}
+</code></pre>
+<p><img src="images/message-dialog.png" alt="message-dialog" /></p>
+<p>MessageDialog::newの第1引数には、windowのOptionを渡しますが、windowそのものの所有権をmoveで
+クロージャに渡してしまうと、あとで使うはずのwindowが使えなくなってしまいます。そのため、clone()したものをクロージャで使います。</p>
+<p>gtk::Windowのclone()は、Gtk+で利用しているGObjectのリファレンスカウントを増加させるもので、deep copyされるわけではありません。</p>
+<p>なお、clone()しないとこのようなエラーが出力されます。clone()が必要かも、とエラーで言っています。</p>
+<blockquote>
+<p>src/main.rs:41:5: 41:11 error: use of moved value: <code>window</code> [E0382]<br />
+src/main.rs:41     window.add(&amp;hbox);<br />
+^~~~~~<br />
+src/main.rs:41:5: 41:11 help: run <code>rustc --explain E0382</code> to see a detailed explanation<br />
+src/main.rs:25:28: 37:6 note: <code>window</code> moved into closure environment here because it has type <code>gtk::auto::window::Window</code>, which is non-copyable<br />
+src/main.rs:25     button.connect_clicked(move |_| {<br />
+src/main.rs:26         let message = format!(&quot;Text: {}&quot;, entry.get_text().unwrap());<br />
+src/main.rs:27<br />
+src/main.rs:28         let dialog = gtk::MessageDialog::new(<br />
+src/main.rs:29             Some(&amp;window),<br />
+src/main.rs:30             gtk::DialogFlags::empty(),<br />
+...<br />
+src/main.rs:25:28: 37:6 help: perhaps you meant to use <code>clone()</code>?</p>
+</blockquote>
+<p>ここまで来れば、すでに簡単なアプリケーションが作れるようになっているはずです。</p>
+
+                </div>
+
+                <!-- Mobile navigation buttons -->
+                
+                    <a href="./container.html" class="mobile-nav-chapters previous">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
+
+                
+                    <a href="./glade.html" class="mobile-nav-chapters next">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+                
+
+            </div>
+
+            
+                <a href="./container.html" class="nav-chapters previous" title="You can navigate through the chapters using the arrow keys">
+                    <i class="fa fa-angle-left"></i>
+                </a>
+            
+
+            
+                <a href="./glade.html" class="nav-chapters next" title="You can navigate through the chapters using the arrow keys">
+                    <i class="fa fa-angle-right"></i>
+                </a>
+            
+
+        </div>
+
+
+        <!-- Local fallback for Font Awesome -->
+        <script>
+            if ($(".fa").css("font-family") !== "FontAwesome") {
+                $('<link rel="stylesheet" type="text/css" href="_FontAwesome/css/font-awesome.css">').prependTo('head');
+            }
+        </script>
+
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+    </body>
+</html>

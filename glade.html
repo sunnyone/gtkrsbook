@@ -1,0 +1,137 @@
+<!DOCTYPE HTML>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>RustとGtk+で開発するGUIアプリケーション</title>
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="gtk-rsライブラリを利用してデスクトップアプリケーションを作成する方法を説明します">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <base href="">
+
+        <link rel="stylesheet" href="book.css">
+        <link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/css'>
+
+        <link rel="shortcut icon" href="favicon.png">
+
+        <!-- Font Awesome -->
+        <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+
+        <!-- MathJax -->
+        <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+        <!-- Fetch JQuery from CDN but have a local fallback -->
+        <script src="http://code.jquery.com/jquery-2.1.4.min.js"></script>
+        <script>
+            if (typeof jQuery == 'undefined') {
+                document.write(unescape("%3Cscript src='jquery.js'%3E%3C/script%3E"));
+            }
+        </script>
+    </head>
+    <body>
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme = localStorage.getItem('theme');
+            if (theme == null) { theme = 'light'; }
+            $('body').removeClass().addClass(theme);
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var sidebar = localStorage.getItem('sidebar');
+            if (sidebar === "hidden") { $("html").addClass("sidebar-hidden") }
+            else if (sidebar === "visible") { $("html").addClass("sidebar-visible") }
+        </script>
+
+        <div id="sidebar" class="sidebar">
+            <ul class="chapter"><li><a href="./introduction.html"><strong>1.</strong> はじめに</a></li><li><a href="./why_rust.html"><strong>2.</strong> なぜRustなのか</a></li><li><a href="./hello_world.html"><strong>3.</strong> Hello, World</a></li><li><a href="./container.html"><strong>4.</strong> ウィジットとコンテナ</a></li><li><a href="./signal.html"><strong>5.</strong> シグナル（イベント）</a></li><li><a href="./glade.html" class="active"><strong>6.</strong> Glade（UIデザイナー）の活用</a></li></ul>
+        </div>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar" class="menu-bar">
+                    <div class="left-buttons">
+                        <i id="sidebar-toggle" class="fa fa-bars"></i>
+                        <i id="theme-toggle" class="fa fa-paint-brush"></i>
+                    </div>
+
+                    <h1 class="menu-title">RustとGtk+で開発するGUIアプリケーション</h1>
+
+                    <div class="right-buttons">
+                        <i id="print-button" class="fa fa-print" title="Print this book"></i>
+                    </div>
+                </div>
+
+                <div id="content" class="content">
+                    <h1>Gladeの活用</h1>
+<p>以前の章のようにUIをコードで記述していけば、UIを作ることができますが、命令的な記述では手間がかかります。
+そこで登場するのが、<a href="https://glade.gnome.org/">Glade</a>というGtk+アプリケーションのUIデザイナーです。</p>
+<h2>GladeでのUIの作成</h2>
+<p>glade &amp;でGladeを起動すると、UIデザインの画面が表示されるので、そこでウィジットをドラッグアンドドロップで配置していきます。</p>
+<p><img src="./images/glade.png" alt="glade" /></p>
+<p>あとは、「ファイル＞名前をつけて保存」によりUIの定義が記述されたXMLファイルを保存します。ここでは、ファイルパスをsrc/resources/main.ui とします。</p>
+<h2>BuilderによるUI定義ファイルの呼び出し</h2>
+<p>GtkBuilderを利用すると、Gladeで保存したファイルからUIを作成することができます。Rustのinclude_str!マクロを利用すると、コンパイル時に文字列にしておいてくれるため、さらに便利です。</p>
+<p>保存したmain.uiを表示するには、<a href="http://gtk-rs.org/docs/gtk/struct.Builder.html#method.new_from_string">Builder</a>を作り、必要に応じて<a href="http://gtk-rs.org/docs/gtk/struct.Builder.html#method.get_object">get_object</a>で取り出してシグナルを接続します。</p>
+<pre><code class="language-rust">extern crate gtk;
+
+use gtk::prelude::*;
+
+fn main() {
+    gtk::init().expect(&quot;Failed to initialize GTK.&quot;);
+
+    let ui = include_str!(&quot;resources/main.ui&quot;);
+    let builder = gtk::Builder::new_from_string(ui);
+    
+    let window1 : gtk::Window = builder.get_object(&quot;window1&quot;).unwrap();
+    window1.connect_delete_event(move |_, _| {
+        gtk::main_quit();
+        Inhibit(false)
+    });
+
+    window1.show_all();
+    
+    gtk::main();
+}
+</code></pre>
+<p>get_object()は、型がわからないため、明示的に型を指示します。</p>
+
+                </div>
+
+                <!-- Mobile navigation buttons -->
+                
+                    <a href="./signal.html" class="mobile-nav-chapters previous">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
+
+                
+
+            </div>
+
+            
+                <a href="./signal.html" class="nav-chapters previous" title="You can navigate through the chapters using the arrow keys">
+                    <i class="fa fa-angle-left"></i>
+                </a>
+            
+
+            
+
+        </div>
+
+
+        <!-- Local fallback for Font Awesome -->
+        <script>
+            if ($(".fa").css("font-family") !== "FontAwesome") {
+                $('<link rel="stylesheet" type="text/css" href="_FontAwesome/css/font-awesome.css">').prependTo('head');
+            }
+        </script>
+
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+    </body>
+</html>

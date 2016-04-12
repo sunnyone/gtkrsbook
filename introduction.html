@@ -1,0 +1,128 @@
+<!DOCTYPE HTML>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>RustとGtk+で開発するGUIアプリケーション</title>
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="gtk-rsライブラリを利用してデスクトップアプリケーションを作成する方法を説明します">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <base href="">
+
+        <link rel="stylesheet" href="book.css">
+        <link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/css'>
+
+        <link rel="shortcut icon" href="favicon.png">
+
+        <!-- Font Awesome -->
+        <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+
+        <!-- MathJax -->
+        <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+        <!-- Fetch JQuery from CDN but have a local fallback -->
+        <script src="http://code.jquery.com/jquery-2.1.4.min.js"></script>
+        <script>
+            if (typeof jQuery == 'undefined') {
+                document.write(unescape("%3Cscript src='jquery.js'%3E%3C/script%3E"));
+            }
+        </script>
+    </head>
+    <body>
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme = localStorage.getItem('theme');
+            if (theme == null) { theme = 'light'; }
+            $('body').removeClass().addClass(theme);
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var sidebar = localStorage.getItem('sidebar');
+            if (sidebar === "hidden") { $("html").addClass("sidebar-hidden") }
+            else if (sidebar === "visible") { $("html").addClass("sidebar-visible") }
+        </script>
+
+        <div id="sidebar" class="sidebar">
+            <ul class="chapter"><li><a href="./introduction.html" class="active"><strong>1.</strong> はじめに</a></li><li><a href="./why_rust.html"><strong>2.</strong> なぜRustなのか</a></li><li><a href="./hello_world.html"><strong>3.</strong> Hello, World</a></li><li><a href="./container.html"><strong>4.</strong> ウィジットとコンテナ</a></li><li><a href="./signal.html"><strong>5.</strong> シグナル（イベント）</a></li><li><a href="./glade.html"><strong>6.</strong> Glade（UIデザイナー）の活用</a></li></ul>
+        </div>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar" class="menu-bar">
+                    <div class="left-buttons">
+                        <i id="sidebar-toggle" class="fa fa-bars"></i>
+                        <i id="theme-toggle" class="fa fa-paint-brush"></i>
+                    </div>
+
+                    <h1 class="menu-title">RustとGtk+で開発するGUIアプリケーション</h1>
+
+                    <div class="right-buttons">
+                        <i id="print-button" class="fa fa-print" title="Print this book"></i>
+                    </div>
+                </div>
+
+                <div id="content" class="content">
+                    <h1>RustとGtk+で開発するGUIアプリケーション Rev 0.1</h1>
+<h1>この文書の目的とすること</h1>
+<p>Rust言語とGtk+ / gtk-rs ライブラリを利用して、GUIアプリケーション（デスクトップアプリケーション）を作る方法を説明します。</p>
+<p>gtk-rsライブラリを利用してRustとGtk+を組み合わせることを中心として記述し、以下の内容は対象としません。</p>
+<ul>
+<li>Rust言語自体の入門</li>
+<li>Gtk+の各種ウィジットの使い方</li>
+</ul>
+<h1>事前に準備する環境</h1>
+<p>環境は、以下の通りを想定します。</p>
+<ul>
+<li>Ubuntu 14.04</li>
+<li>Rust 1.7.0</li>
+</ul>
+<h1>利用するライブラリのバージョン</h1>
+<ul>
+<li>Gtk+ 3.10</li>
+<li>Glade 3.16.1 (Optional)</li>
+<li>gtk-rs 0.0.7</li>
+</ul>
+<p>Ubuntuでは、以下の通り実行することで、必要なライブラリのインストールが可能です。</p>
+<pre><code># apt-get install libgtk-3-0-dev glade
+</code></pre>
+
+                </div>
+
+                <!-- Mobile navigation buttons -->
+                
+
+                
+                    <a href="./why_rust.html" class="mobile-nav-chapters next">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+                
+
+            </div>
+
+            
+
+            
+                <a href="./why_rust.html" class="nav-chapters next" title="You can navigate through the chapters using the arrow keys">
+                    <i class="fa fa-angle-right"></i>
+                </a>
+            
+
+        </div>
+
+
+        <!-- Local fallback for Font Awesome -->
+        <script>
+            if ($(".fa").css("font-family") !== "FontAwesome") {
+                $('<link rel="stylesheet" type="text/css" href="_FontAwesome/css/font-awesome.css">').prependTo('head');
+            }
+        </script>
+
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+    </body>
+</html>

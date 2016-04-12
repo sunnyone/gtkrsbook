@@ -1,0 +1,219 @@
+<!DOCTYPE HTML>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>RustとGtk+で開発するGUIアプリケーション</title>
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="gtk-rsライブラリを利用してデスクトップアプリケーションを作成する方法を説明します">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <base href="">
+
+        <link rel="stylesheet" href="book.css">
+        <link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/css'>
+
+        <link rel="shortcut icon" href="favicon.png">
+
+        <!-- Font Awesome -->
+        <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+
+        <!-- MathJax -->
+        <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+        <!-- Fetch JQuery from CDN but have a local fallback -->
+        <script src="http://code.jquery.com/jquery-2.1.4.min.js"></script>
+        <script>
+            if (typeof jQuery == 'undefined') {
+                document.write(unescape("%3Cscript src='jquery.js'%3E%3C/script%3E"));
+            }
+        </script>
+    </head>
+    <body>
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme = localStorage.getItem('theme');
+            if (theme == null) { theme = 'light'; }
+            $('body').removeClass().addClass(theme);
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var sidebar = localStorage.getItem('sidebar');
+            if (sidebar === "hidden") { $("html").addClass("sidebar-hidden") }
+            else if (sidebar === "visible") { $("html").addClass("sidebar-visible") }
+        </script>
+
+        <div id="sidebar" class="sidebar">
+            <ul class="chapter"><li><a href="./introduction.html"><strong>1.</strong> はじめに</a></li><li><a href="./why_rust.html"><strong>2.</strong> なぜRustなのか</a></li><li><a href="./hello_world.html"><strong>3.</strong> Hello, World</a></li><li><a href="./container.html" class="active"><strong>4.</strong> ウィジットとコンテナ</a></li><li><a href="./signal.html"><strong>5.</strong> シグナル（イベント）</a></li><li><a href="./glade.html"><strong>6.</strong> Glade（UIデザイナー）の活用</a></li></ul>
+        </div>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar" class="menu-bar">
+                    <div class="left-buttons">
+                        <i id="sidebar-toggle" class="fa fa-bars"></i>
+                        <i id="theme-toggle" class="fa fa-paint-brush"></i>
+                    </div>
+
+                    <h1 class="menu-title">RustとGtk+で開発するGUIアプリケーション</h1>
+
+                    <div class="right-buttons">
+                        <i id="print-button" class="fa fa-print" title="Print this book"></i>
+                    </div>
+                </div>
+
+                <div id="content" class="content">
+                    <h1>コンテナ(container)とウィジット(widget)</h1>
+<h2>ラベル ウィジットの追加</h2>
+<p>今度はできたウィンドウにラベルを追加してみます。</p>
+<p>ラベルを追加するには、Labelインスタンスを作成し、windowに<a href="http://gtk-rs.org/docs/gtk/trait.ContainerExt.html#tymethod.add">add</a>するだけです。このLabelのようなUI部品を、Gtk+では「ウィジット(widget)」といいます。</p>
+<pre><code class="language-rust">extern crate gtk;
+
+use gtk::prelude::*;
+
+fn main() {
+    gtk::init().expect(&quot;Failed to initialize GTK.&quot;);
+
+    let window = gtk::Window::new(gtk::WindowType::Toplevel);
+    window.set_title(&quot;Hello, World&quot;);
+    
+    let label = gtk::Label::new(Some(&quot;Hello, World&quot;));
+    window.add(&amp;label);
+    
+    window.show_all();
+    
+    gtk::main();
+}
+</code></pre>
+<p><img src="./images/label-only.png" alt="Labelのみ" /></p>
+<h2>Buttonを追加すると…？</h2>
+<p>では試しに<a href="http://gtk-rs.org/docs/gtk/struct.Button.html">Button</a>ウィジットをaddしてみましょう。</p>
+<pre><code class="language-rust">let label = gtk::Label::new(Some(&quot;Hello, World&quot;));
+window.add(&amp;label);
+
+let button = gtk::Button::new_with_label(&quot;OK&quot;);
+window.add(&amp;button);
+</code></pre>
+<p>実行すると、以下のようなエラーが出力されます。</p>
+<blockquote>
+<p>(hello:5518): Gtk-WARNING **: Attempting to add a widget with type GtkButton to a GtkWindow, but as a GtkBin subclass a GtkWindow can only contain one widget at a time; it already contains a widget of type GtkLabel</p>
+</blockquote>
+<p>エラーは、GtkBinのサブクラスであるGtkWindowはひとつのウィジットしか含められないと言っています。どういうことでしょうか。</p>
+<h2>コンテナを追加</h2>
+<p>Windowのように、他のコンテナをもつことができるウィジットをGtk+では「コンテナ(Container)」といいます。
+Windowは、<a href="http://gtk-rs.org/docs/gtk/struct.Bin.html">Bin</a>というひとつのウィジットを持つことができるコンテナです。</p>
+<p>もし先の例のように、複数個のウィジットを追加したい場合は、他のコンテナを使う必要があります。ここでは、一番よく使われる「<a href="http://gtk-rs.org/docs/gtk/struct.Box.html">Box</a>」というコンテナを使ってみましょう。このコンテナはウィジットを縦あるいは横に並べることができます。</p>
+<pre><code class="language-rust">extern crate gtk;
+
+use gtk::prelude::*;
+
+
+fn main() {
+    gtk::init().expect(&quot;Failed to initialize GTK.&quot;);
+
+    let window = gtk::Window::new(gtk::WindowType::Toplevel);
+    window.set_title(&quot;Hello, World&quot;);
+    
+    let hbox = gtk::Box::new(gtk::Orientation::Horizontal, 5);
+    
+    let label = gtk::Label::new(Some(&quot;Hello, World&quot;));
+    hbox.pack_start(&amp;label, true, true, 5);
+    
+    let button = gtk::Button::new_with_label(&quot;OK&quot;);
+    hbox.pack_start(&amp;button, false, false, 5);
+
+    window.add(&amp;hbox);
+    window.show_all();
+    
+    gtk::main();
+}
+</code></pre>
+<p>動作させると、このようになります。</p>
+<p><img src="./images/label-button.png" alt="LabelとButton" /></p>
+<p>Boxもコンテナであるため、もちろんWindowと同様にadd()することができます。しかし、広げるかどうかなどのパラメータをいくつか与えた方が便利であるため、普通は<a href="http://gtk-rs.org/docs/gtk/trait.BoxExt.html#tymethod.pack_start">pack_start</a>あるいは<a href="http://gtk-rs.org/docs/gtk/trait.BoxExt.html#tymethod.pack_end">pack_end</a>を利用します。</p>
+<h2>コンテナのネスト</h2>
+<p>コンテナもウィジットのため、コンテナをコンテナの中に入れることができます。</p>
+<p>例として、ラベルの下に1行テキスト入力とボタンを置く画面を作ると、以下のようになります。
+<a href="http://gtk-rs.org/docs/gtk/struct.Entry.html">Entry</a>が1行のテキストを入力するためのウィジットです。</p>
+<pre><code class="language-rust">extern crate gtk;
+
+use gtk::prelude::*;
+
+
+fn main() {
+    gtk::init().expect(&quot;Failed to initialize GTK.&quot;);
+
+    let window = gtk::Window::new(gtk::WindowType::Toplevel);
+    window.set_title(&quot;Hello, World&quot;);
+
+    let vbox = gtk::Box::new(gtk::Orientation::Vertical, 5);
+    let label = gtk::Label::new(Some(&quot;Hello, World&quot;));
+    vbox.pack_start(&amp;label, false, false, 5);
+    
+    let hbox = gtk::Box::new(gtk::Orientation::Horizontal, 5);
+    
+    let entry = gtk::Entry::new();
+    hbox.pack_start(&amp;entry, false, false, 5);
+    
+    let button = gtk::Button::new_with_label(&quot;OK&quot;);
+    hbox.pack_start(&amp;button, false, false, 5);
+    
+    vbox.pack_start(&amp;hbox, true, true, 5);
+
+    window.add(&amp;vbox);
+    window.show_all();
+    
+    gtk::main();
+}
+</code></pre>
+<p>動作させると、このようになります。</p>
+<p><img src="./images/label-entry-button.png" alt="LabelとEntryとButton" /></p>
+<p>もしコードでUIを組み立てる場合は、様々なウィジットを活用しながら、コンテナに詰めていくという作業の繰り返しになります。</p>
+
+                </div>
+
+                <!-- Mobile navigation buttons -->
+                
+                    <a href="./hello_world.html" class="mobile-nav-chapters previous">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
+
+                
+                    <a href="./signal.html" class="mobile-nav-chapters next">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+                
+
+            </div>
+
+            
+                <a href="./hello_world.html" class="nav-chapters previous" title="You can navigate through the chapters using the arrow keys">
+                    <i class="fa fa-angle-left"></i>
+                </a>
+            
+
+            
+                <a href="./signal.html" class="nav-chapters next" title="You can navigate through the chapters using the arrow keys">
+                    <i class="fa fa-angle-right"></i>
+                </a>
+            
+
+        </div>
+
+
+        <!-- Local fallback for Font Awesome -->
+        <script>
+            if ($(".fa").css("font-family") !== "FontAwesome") {
+                $('<link rel="stylesheet" type="text/css" href="_FontAwesome/css/font-awesome.css">').prependTo('head');
+            }
+        </script>
+
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+    </body>
+</html>
